@@ -7,7 +7,7 @@ export type User = {
     age: number,
     ageClass: number,
     occupation: number,
-    cultural366146Background: number,
+    culturalBackground: number,
     famSocioEconomicClass: number,
     famCitySize: number
     preferences: UserPreference[]
