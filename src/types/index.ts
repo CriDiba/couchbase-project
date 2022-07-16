@@ -1,13 +1,4 @@
-export type User = {
-    userId: string,
-    familyId: string,
-    isSubscriber: boolean,
-    gender: string,
-    yearOfBirth: number,
-    age: number,
-    ageClass: number,
-    occupation: number,
-    culturalBackground: number,
-    famSocioEconomicClass: number,
-    famCitySize: number
-}
+export * from './raw'
+export * from './user'
+export * from './program'
+export * from './channel'
