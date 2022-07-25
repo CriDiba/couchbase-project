@@ -3,4 +3,5 @@ export type Program = {
     genre: string
     subgenre: string
     channelId: string
+    viewings: string[]
 }

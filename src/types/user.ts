@@ -11,22 +11,11 @@ export type User = {
     famSocioEconomicClass: number,
     famCitySize: number
     preferences: UserPreference[]
-    viewings: Viewing[]
+    viewings: string[]
 }
 
 export type UserPreference = {
     channelId: string,
     seconds: number,
     preference: number
-}
-
-export type Viewing = {
-    id: string,
-    groupId: string,
-    programId: string,
-    channelId: string,
-    startTime: string,
-    endTime: string,
-    timeSlot: string,
-    dayOfWeek: string
 }

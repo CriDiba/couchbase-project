@@ -3,22 +3,42 @@ import { parse } from 'csv-parse';
 import fs from 'fs';
 import { Logger } from 'tslog';
 import { CSV_CHANNELS_PATH, CSV_PREFRENCES_PATH, CSV_PROGRAMS_PATH, CSV_USERS_PATH, CSV_VIEWINGS_PATH } from './config';
-import { Channel, Program, User } from './types';
+import { Channel, Program, User, Viewing } from './types';
 import { RawChannel, RawProgram, RawTvViewing, RawUser, RawUserPreference } from './types/raw';
 
 const log = new Logger()
 
 const programsChannel: { [programId: string]: string } = {}
+const programsViewings: { [programId: string]: string[] } = {}
+const userViewings: { [userId: string]: string[] } = {}
 
-export async function importChannels(collection: Collection) {
-    await parseDataset(CSV_CHANNELS_PATH, async (row: RawChannel) => {
-        const channelDoc: Channel = {
+export async function importViewings(collection: Collection) {
+    await parseDataset(CSV_VIEWINGS_PATH, async (row: RawTvViewing) => {
+        programsChannel[row.program_id] = row.epg_channel_id
+
+        if (programsViewings[row.program_id] === undefined) {
+            programsViewings[row.program_id] = []
+        }
+        programsViewings[row.program_id].push(row.id)
+
+        if (userViewings[row.user] === undefined) {
+            userViewings[row.user] = []
+        }
+        userViewings[row.user].push(row.id)
+
+        const viewingDoc: Viewing = {
             id: row.id,
-            title: row.title,
-            lag: parseInt(row.lag)
+            userId: row.user,
+            groupId: row.group_id,
+            programId: row.program_id,
+            channelId: row.epg_channel_id,
+            startTime: row.starttime,
+            endTime: row.endtime,
+            timeSlot: row.time_slot,
+            dayOfWeek: row.day_of_week
         }
 
-        await collection.upsert(channelDoc.id, channelDoc)
+        await collection.upsert(viewingDoc.id, viewingDoc)
     })
 }
 
@@ -29,7 +49,7 @@ export async function importUser(collection: Collection) {
         users[row.user_id] = {
             id: row.user_id,
             familyId: row.family_id,
-            isSubscriber: Boolean(row.is_subscriber),
+            isSubscriber: row.is_subscriber === 't',
             gender: parseInt(row.gender),
             yearOfBirth: parseInt(row.year_of_birth),
             age: parseInt(row.age),
@@ -52,23 +72,9 @@ export async function importUser(collection: Collection) {
         })
     })
 
-    await parseDataset(CSV_VIEWINGS_PATH, async (row: RawTvViewing) => {
-        programsChannel[row.program_id] = row.epg_channel_id
-
-        users[row.user].viewings.push({
-            id: row.id,
-            groupId: row.group_id,
-            programId: row.program_id,
-            channelId: row.epg_channel_id,
-            startTime: row.starttime,
-            endTime: row.endtime,
-            timeSlot: row.time_slot,
-            dayOfWeek: row.day_of_week
-        })
-    })
-
     for (const userId in users) {
         const userDoc = users[userId]
+        userDoc.viewings = userViewings[userId]
         await collection.upsert(userDoc.id, userDoc)
     }
 }
@@ -79,10 +85,23 @@ export async function importPrograms(collection: Collection) {
             id: row.pid,
             genre: row.genre,
             subgenre: row.subgenre,
-            channelId: programsChannel[row.pid] ?? ''
+            channelId: programsChannel[row.pid] ?? '',
+            viewings: programsViewings[row.pid]
         }
 
         await collection.upsert(programDoc.id, programDoc)
+    })
+}
+
+export async function importChannels(collection: Collection) {
+    await parseDataset(CSV_CHANNELS_PATH, async (row: RawChannel) => {
+        const channelDoc: Channel = {
+            id: row.id,
+            title: row.title,
+            lag: parseInt(row.lag)
+        }
+
+        await collection.upsert(channelDoc.id, channelDoc)
     })
 }
 
